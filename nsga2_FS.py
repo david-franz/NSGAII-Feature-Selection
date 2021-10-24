@@ -30,3 +30,27 @@ print(results.X) # function inputs
 # these will be the outputs of my function fitness
 
 # need to implement wrapper based fitness function
+# this is directly copied from an old project- need to make work with this project
+def wrapper_based_fitness_function(binary_string):
+	if binary_string == ('0' * len(binary_string)):
+		return 0
+
+	# process this as a list here to ensure we remove the class label
+	training_data_filtered, class_labels = filter_rows_with_binary_string(training_data, binary_string, True)
+	df_as_list = convert_df_to_list(training_data_filtered)
+
+	knn = KNeighborsClassifier(n_neighbors=10)
+
+	knn.fit(df_as_list, class_labels)
+
+	testing_data_filtered, testing_data_class_labels = filter_rows_with_binary_string(testing_data, binary_string, True)
+	testing_data_filtered_as_list = convert_df_to_list(testing_data_filtered)
+
+	predicted_class_labels = knn.predict(testing_data_filtered_as_list)
+
+	count_correct = 0
+	for i in range(len(predicted_class_labels)):
+		if predicted_class_labels[i] == testing_data_class_labels[i]:
+			count_correct += 1
+
+	return float(count_correct) / len(predicted_class_labels)
