@@ -17,14 +17,14 @@ from pymoo.indicators.hv import Hypervolume
 from dataloader import DataLoader
 
 def fitness(binary_string):
-	return wrapper_based_fitness_function(binary_string), (count_1s(binary_string)/NUMBER_OF_FEATURES)
+	return -wrapper_based_fitness_function(binary_string), (count_1s(binary_string)/NUMBER_OF_FEATURES)
 
 class ProblemWrapper(Problem):
 
 	def _evaluate(self, designs, out, *args, **kwargs):
 		res = list()
 		for design in designs:
-			
+
 			bs = ''.join([str(i) for i in design.astype(int)])
 			res.append(fitness(bs))
 
@@ -42,7 +42,7 @@ def convert_df_to_list(data):
 
 def wrapper_based_fitness_function(binary_string):
 	if binary_string == ('0' * len(binary_string)):
-		return float('-inf')
+		return -100000000
 
 	filter_data = lambda data_as_list: [[data_as_list[j][i] for i in range(len(data_as_list[0])-1)] for j in range(len(data_as_list))]
 	get_class_labels = lambda data_as_list: [class_numerical_mapping[data_as_list[i][len(data_as_list[0])-1]] for i in range(len(data_as_list))]
@@ -77,11 +77,13 @@ def count_1s(binary_string):
 
 if __name__ == '__main__':
 
-	f = "musk/clean1.data"
-	#f = "vehicle/vehicle.dat"
+	f = "musk/clean1.data" if "musk" in sys.argv[1] else "vehicle/vehicle.dat"
+	print("{} dataset selected".format(f.split('/')[0]))
 
 	NUMBER_OF_FEATURES = 167 if "musk" in f else 18 # this is for the musk data set
 	class_numerical_mapping = {"non-musk":0, "musk":1} if "musk" in f else{"van":0, "saab":1, "bus":2, "opel":3}
+	population_size = 50 if "musk" in f else 250
+	number_gens = 15 if "musk" in f else 5
 
 	df = DataLoader.load_data(f)
 
@@ -91,15 +93,17 @@ if __name__ == '__main__':
 
 	problem = ProblemWrapper(n_var=NUMBER_OF_FEATURES, n_obj=2, xl=0, xu=1, type_var=bool) # xl is lower bound, xu is upper bound
 
-	algorithm = NSGA2(pop_size=5, sampling=get_sampling("bin_random"), crossover=get_crossover("bin_hux"), mutation=get_mutation("bin_bitflip"), eliminate_duplicates=True)
+	algorithm = NSGA2(pop_size=population_size, sampling=get_sampling("bin_random"), crossover=get_crossover("bin_hux"), mutation=get_mutation("bin_bitflip"), eliminate_duplicates=True)
 
-	stop_criteria = ('n_gen', 5)
+	stop_criteria = ('n_gen', number_gens)
 
 	results = minimize(problem=problem, algorithm=algorithm, termination=stop_criteria)
 
 	fitnesses = list()
 	for result in results.X.astype(int):
 		result = ''.join([str(i) for i in result])
+		if wrapper_based_fitness_function(result) == float('-inf'):
+			continue
 
 		print(result)
 		print(count_1s(result))
