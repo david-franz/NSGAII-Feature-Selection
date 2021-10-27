@@ -17,7 +17,11 @@ from pymoo.indicators.hv import Hypervolume
 from dataloader import DataLoader
 
 def fitness(binary_string):
-	return -wrapper_based_fitness_function(binary_string), (count_1s(binary_string)/NUMBER_OF_FEATURES)
+	ratio = (count_1s(binary_string)/NUMBER_OF_FEATURES)
+
+	ratio = ratio if ratio > 0.0 else float('inf')
+
+	return -wrapper_based_fitness_function(binary_string), ratio
 
 class ProblemWrapper(Problem):
 
@@ -42,7 +46,7 @@ def convert_df_to_list(data):
 
 def wrapper_based_fitness_function(binary_string):
 	if binary_string == ('0' * len(binary_string)):
-		return -100000000
+		return float('-inf')
 
 	filter_data = lambda data_as_list: [[data_as_list[j][i] for i in range(len(data_as_list[0])-1)] for j in range(len(data_as_list))]
 	get_class_labels = lambda data_as_list: [class_numerical_mapping[data_as_list[i][len(data_as_list[0])-1]] for i in range(len(data_as_list))]
@@ -81,9 +85,9 @@ if __name__ == '__main__':
 	print("{} dataset selected".format(f.split('/')[0]))
 
 	NUMBER_OF_FEATURES = 167 if "musk" in f else 18 # this is for the musk data set
-	class_numerical_mapping = {"non-musk":0, "musk":1} if "musk" in f else{"van":0, "saab":1, "bus":2, "opel":3}
+	class_numerical_mapping = {"non-musk":0, "musk":1} if "musk" in f else {"van":0, "saab":1, "bus":2, "opel":3}
 	population_size = 50 if "musk" in f else 250
-	number_gens = 15 if "musk" in f else 5
+	number_gens = 15 if "musk" in f else 3
 
 	df = DataLoader.load_data(f)
 
